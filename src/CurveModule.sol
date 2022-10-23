@@ -1,25 +1,36 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-import "@gnosis.pm/safe-contracts/contracts/base/Module.sol";
+import "./interfaces/ICurveGauge.sol";
+
+import "./Enum.sol";
+interface GnosisSafe {
+    /// @dev Allows a Module to execute a Safe transaction without any further confirmations.
+    /// @param to Destination address of module transaction.
+    /// @param value Ether value of module transaction.
+    /// @param data Data payload of module transaction.
+    /// @param operation Operation type of module transaction.
+    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Enum.Operation operation)
+        external
+        returns (bool success);
+}
 
 
-contract CustomModule is Module {
+contract CurveModule {
     /// @dev Address that this module will pass transactions to.
-    address public target;
+    ICurveGauge internal curveGauge =
+        ICurveGauge(0x9633E0749faa6eC6d992265368B88698d6a93Ac0);
+    address safe = 0x5F165eCA72f805B71DA58aB4Db789023e126134F;
 
-    function customMethod(
-        address to,
-        uint256 value,
-        bytes memory data,
-        Enum.Operation operation
+    function harvest(
     ) public returns (bool success) {
-        /// TO-DO: Add restrictions here
 
-        success = GnosisSafe(target).execTransactionFromModule(
-            to,
-            value,
-            data,
-            operation
+        success = GnosisSafe(safe).execTransactionFromModule(
+            address(curveGauge),
+            0,
+            abi.encodeWithSignature(
+            "claim_rewards()"
+            ),
+            Enum.Operation.Call
         );
         return success;
     }
