@@ -20,10 +20,22 @@ contract CurveModule {
     /// @dev Address that this module will pass transactions to.
     ICurveGauge internal curveGauge = ICurveGauge(0x9633E0749faa6eC6d992265368B88698d6a93Ac0);
 
-    function harvest(address safe) public returns (bool success) {
+    function harvest(address safe, address keeper) claimGas(keeper) public returns (bool success) {
         success = GnosisSafe(safe).execTransactionFromModule(
             address(curveGauge), 0, abi.encodeWithSignature("claim_rewards()"), Enum.Operation.Call
         );
         return success;
+    }
+
+    modifier claimGas(address recipient) {
+        uint startGas = gasleft();
+        uint gasCost = 0 // Use chainlink API to get current gas or send it manually (IN WEI)
+        _;
+        uint endGas = gasleft();
+        uint totalFee = (startGas - endGas + 50000) * gasCost; // Adding 50k for additional eth transfer using gnosis
+        bool success = GnosisSafe(safe).execTransactionFromModule(
+            recipient, totalFee, abi.encodeWithSignature(""), Enum.Operation.Call
+        );
+        require (success);
     }
 }
