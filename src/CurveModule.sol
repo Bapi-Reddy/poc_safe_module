@@ -29,10 +29,9 @@ contract CurveModule {
 
     modifier claimGas(address recipient) {
         uint startGas = gasleft();
-        uint gasCost = 0 // Use chainlink API to get current gas or send it manually (IN WEI)
         _;
         uint endGas = gasleft();
-        uint totalFee = (startGas - endGas + 50000) * gasCost; // Adding 50k for additional eth transfer using gnosis
+        uint totalFee = (startGas - endGas + 50000) * tx.gasprice; // Adding 50k for additional eth transfer using gnosis
         bool success = GnosisSafe(safe).execTransactionFromModule(
             recipient, totalFee, abi.encodeWithSignature(""), Enum.Operation.Call
         );
