@@ -1,0 +1,2 @@
+gearbox_core/=lib/core-v2/contracts/
+gearbox_integrations/=lib/integrations-v2/contracts/
