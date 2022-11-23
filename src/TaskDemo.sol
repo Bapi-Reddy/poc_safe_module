@@ -1,41 +1,87 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "openzeppelin-contracts/access/Ownable.sol";
 import "./GelatoManager.sol";
 
 contract TaskDemo is GelatoManager, Ownable {
+    mapping(address => bytes32) public safeTask;
+
+    bool execTasks;
+
+    event SafetaskDone(address safe);
+
     constructor(address ops) GelatoManager(ops) {}
 
-
-
-    function toDoOrNot(address vault)
-
-    function init(address safe, bytes calldata resolverCalldata)
-        internal
-        returns (bytes)
+    function toDoOrNotToDo(address safe)
+        public
+        view
+        returns (bool, bytes memory)
     {
-        require(currentTask == bytes(0), "task already present");
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](3),
-            args: new bytes[](3)
-        });
+        if (safeTask[safe] == bytes32(0))
+            return (false, "Safe is not registered");
+        if (execTasks)
+            return (true, abi.encodeCall(this.actionForSafe, (safe)));
+        return (false, "execution not set to true");
+    }
 
-        moduleData.modules[0] = Module.RESOLVER;
-        moduleData.modules[1] = Module.TIME;
-        moduleData.modules[2] = Module.PROXY;
+    /// this function should be present in safe module
+    /// it may also check msgsender to be dedicatedMsgSender
+    /// for demo, this is currently in the resolver
+    function actionForSafe(address safe) external onlyDedicatedMsgSender {
+        // DO whatever you need to
+        emit SafetaskDone(safe);
+    }
 
-        moduleData.args[0] = _resolverModuleArg(
-            address(this),
-            abi.encodeCall(this.checker, ())
+    function registerSafe(address safe) public onlyOwner {
+        require(safeTask[safe] == bytes32(0), "Safe already registered");
+        bytes memory resolverCalldata = abi.encodeCall(
+            this.toDoOrNotToDo,
+            (safe)
         );
-        moduleData.args[1] = _timeModuleArg(block.timestamp, 300);
-        moduleData.args[2] = _proxyModuleArg();
-
-        currentTask = _createTask(address(this), "", moduleData, ETH);
+        // bytes memory funcSelector = bytes(this.actionForSafe.selector);
+        bytes32 taskId = init(
+            resolverCalldata,
+            abi.encode(this.actionForSafe.selector)
+        );
+        safeTask[safe] = taskId;
     }
 
-    function kill() internal {
-        _cancelTask(currentTask);
-        delete (currentTask);
+    function removeSafe(address safe) public onlyOwner {
+        bytes32 taskId = safeTask[safe];
+        require(taskId != bytes32(0), "Safe doesnt exist");
+        _cancelTask(taskId);
+        delete safeTask[safe];
     }
+
+    function flipExec() public onlyOwner {
+        execTasks = !execTasks;
+    }
+
+    function addFunds(uint256 wad) public onlyOwner {
+        _depositFunds(wad, ETH);
+    }
+
+    function removeFunds(uint256 wad) public payable onlyOwner {
+        withdrawFunds(wad, ETH);
+    }
+
+    function recover() public onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}(
+            ""
+        );
+        require(success, "recovery failed");
+    }
+
+    function exit(address safe) public onlyOwner {
+        removeSafe(safe);
+
+        uint256 bal = ITaskTreasuryUpgradable(ops.taskTreasury())
+            .userTokenBalance(address(this), ETH);
+
+        removeFunds(bal);
+        recover();
+    }
+
+    receive() external payable {}
 }

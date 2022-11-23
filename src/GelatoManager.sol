@@ -4,15 +4,12 @@ pragma solidity ^0.8.13;
 import "ops/integrations/OpsTaskCreator.sol";
 
 contract GelatoManager is OpsTaskCreator {
-    constructor(address ops) OpsTaskCreator(ops, address(this)) {}
+    constructor(address _ops) OpsTaskCreator(_ops, address(this)) {}
 
-    bytes currentTask;
-
-    function init(address safe, bytes calldata resolverCalldata)
+    function init(bytes memory resolverCalldata, bytes memory funcSelector)
         internal
-        returns (bytes)
+        returns (bytes32 currentTask)
     {
-        require(currentTask == bytes(0), "task already present");
         ModuleData memory moduleData = ModuleData({
             modules: new Module[](3),
             args: new bytes[](3)
@@ -23,17 +20,20 @@ contract GelatoManager is OpsTaskCreator {
         moduleData.modules[2] = Module.PROXY;
 
         moduleData.args[0] = _resolverModuleArg(
-            address(this),
-            abi.encodeCall(this.checker, ())
+            address(this), // address of resolver
+            resolverCalldata // what function to call on resolver
         );
-        moduleData.args[1] = _timeModuleArg(block.timestamp, 300);
+        moduleData.args[1] = _timeModuleArg(
+            block.timestamp, //starttime
+            300 //interval
+        );
         moduleData.args[2] = _proxyModuleArg();
 
-        currentTask = _createTask(address(this), "", moduleData, ETH);
-    }
-
-    function kill() internal {
-        _cancelTask(currentTask);
-        delete (currentTask);
+        currentTask = _createTask(
+            address(this), // _execAddress
+            funcSelector, // _execDataOrSelector
+            moduleData, // _moduleData
+            address(0) // _feeToken
+        );
     }
 }
