@@ -1,4 +1,7 @@
 include .env
+
+run_test:
+	@forge test --fork-url ${ARBITRUM_RPC} --fork-block-number ${ARBITRUM_BLOCK} -vv
 deploy_demo:
 	@forge build
 	@forge script script/Deploy.s.sol --sig "run()" --rpc-url ${MATIC_RPC} --private-key ${PRIV_KEY} -v --broadcast
