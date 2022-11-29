@@ -5,7 +5,6 @@ import "./Registry.sol";
 import "forge-std/console.sol";
 
 contract GLPController is Registry {
-    uint256 public constant MAX_BPS = 1e4;
     uint256 public gmxSlippage = 10;
 
     uint256 stakedGLP;
