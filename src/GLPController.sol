@@ -116,11 +116,11 @@ contract GLPController is Registry {
     function getHedgeRatio() public returns (uint ratio) {
         uint glpAmount = 1000e18; // 1000 glp tokens
         (uint wethDelta, uint wbtcDelta) = getGLPDelta(glpAmount);
-        uint wethDeltaInUsd = wethDelta*vault.getMinPrice(address(weth))/1e18;
-        uint wbtcDeltaInUsd = wbtcDelta*vault.getMinPrice(address(wbtc))/1e18;
+        uint wethDeltaInUsd = wethDelta*vault.getMinPrice(address(weth))/WETH_PRECISION;
+        uint wbtcDeltaInUsd = wbtcDelta*vault.getMinPrice(address(wbtc))/WBTC_PRECISION;
         uint netDelta = wethDeltaInUsd + wbtcDeltaInUsd;
         uint glpPrice = getGLPPrice();
-        ratio = (netDelta*MAX_BPS)/(glpAmount*glpPrice);
+        ratio = (netDelta*MAX_BPS)/(glpAmount*glpPrice/GLP_PRECISION);
     }
 
     function getGLPRatio(uint usdc_ltv, uint desired_hf)public returns (uint ratio){
@@ -130,7 +130,7 @@ contract GLPController is Registry {
     }
 
     function getGLPPrice() public returns (uint glpPirce){
-        glp_price = glpManager.getAumInUsdg(true)*vault.PRICE_PRECISION()/glp.totalSupply();
+        glp_price = ((glpManager.getAum(true)*vault.PRICE_PRECISION())/glp.totalSupply())/glpManager.PRICE_PRECISION();
     }
 
     function openPositionParams(uint usdcAmount, uint desired_hf) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
