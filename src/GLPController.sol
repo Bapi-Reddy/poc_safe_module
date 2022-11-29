@@ -138,7 +138,7 @@ contract GLPController is Registry {
         uint glpRatio = getGLPRatio(usdc_ltv, desired_hf);
         uint glpUSD = usdcAmount*glpRatio/MAX_BPS;
         aaveUSDCDeposit = usdcAmount - glpUSD;
-        glpPurchase = glpUSD*vault.PRICE_PRECISION()/getGLPPrice();
+        glpPurchase = ((glpUSD*vault.PRICE_PRECISION()/getGLPPrice())*GLP_PRECISION/USDC_PRECISION);
         (wethShort, wbtcShort) = getGLPDelta(glpPurchase);
     }
 }
