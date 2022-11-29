@@ -44,7 +44,7 @@ contract GLPController is Registry {
         returns (uint256 wethOut)
     {
         wethOut = rewardsRouter.unstakeAndRedeemGlp(
-            0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f,
+            WBTC,
             glpAmount,
             0,
             address(this)
@@ -101,5 +101,39 @@ contract GLPController is Registry {
         uint256 estUsdcOut = (glpAmt * 1e6 * glpManager.getAum(buyGlp)) /
             (glpManager.PRICE_PRECISION() * glp.totalSupply());
         return estUsdcOut;
+    }
+
+
+
+    function getGLPDelta(uint glpAmount) public returns(uint wethDelta, uint wbtcDelta) {
+        wbtc_token_weight = vault.tokenWeights(address(wbtc));
+        weth_token_weight = vault.tokenWeights(address(weth));
+
+        wethDelta = vault.poolAmounts(address(weth))*glpAmount/glp.totalSupply();
+        wbtcDelta = vault.poolAmounts(address(wbtc))*glpAmount/glp.totalSupply();
+    }
+
+    function getHedgeRatio() public returns (uint ratio) {
+        uint glpAmount = 1000e18; // 1000 glp tokens
+        (uint wethDelta, uint wbtcDelta) = getGLPDelta(glpAmount);
+        uint wethDeltaInUsd = wethDelta*vault.getMinPrice(address(weth))/1e18;
+        uint wbtcDeltaInUsd = wbtcDelta*vault.getMinPrice(address(wbtc))/1e18;
+        uint netDelta = wethDeltaInUsd + wbtcDeltaInUsd;
+        uint glpPrice = getGLPPrice();
+        ratio = (netDelta*MAX_BPS)/(glpAmount*glpPrice);
+    }
+
+    function getGLPRatio(uint usdc_ltv, uint desired_hf)public returns (uint ratio){
+        uint numerator = usdc_ltv;
+        uint denominator = (desired_hf*getHedgeRatio()/MAX_BPS) + usdc_ltv - (usdc_ltv*getHedgeRatio()/MAX_BPS);
+        ratio = numerator*MAX_BPS/denominator;
+    }
+
+    function getGLPPrice() public returns (uint glpPirce){
+        glp_price = glpManager.getAumInUsdg(true)*vault.PRICE_PRECISION()/glp.totalSupply();
+    }
+
+    function openPosition(uint usdcAmount) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
+        
     }
 }
