@@ -21,6 +21,16 @@ contract AaveControllerTest is Test {
         usdc.transfer(address(cont), usdcAmount);
         cont.addCollateral(usdcAmount);
 
+        cont.borrowBTC(10);
+
+        console.log("btc borrowed bal", cont.wbtc().balanceOf(address(cont)));
+
+        vm.roll(block.number + 100000000);
+        vm.warp(block.timestamp + 100000000);
+
+        cont.repayBTC(10);
+        cont.removeCollateral(100000);
+
         // console.log("glpMinted", glpMinted);
 
         // vm.roll(block.number + 100000000);
