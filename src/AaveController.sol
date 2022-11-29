@@ -11,4 +11,8 @@ contract AaveController is Registry {
         usdc.approve(address(aavePool), usdcAmount);
         aavePool.supply(address(usdc), usdcAmount, address(this), 0);
     }
+
+    //TODO: need view function for aave hf
+
+    //TODO: need view function for token ltv factor.
 }

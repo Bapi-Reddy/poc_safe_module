@@ -133,7 +133,12 @@ contract GLPController is Registry {
         glp_price = glpManager.getAumInUsdg(true)*vault.PRICE_PRECISION()/glp.totalSupply();
     }
 
-    function openPosition(uint usdcAmount) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
-        
+    function openPositionParams(uint usdcAmount, uint desired_hf) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
+        uint usdc_ltv = 7500; //TODO: replace it with value fetched from aave. 
+        uint glpRatio = getGLPRatio(usdc_ltv, desired_hf);
+        uint glpUSD = usdcAmount*glpRatio/MAX_BPS;
+        aaveUSDCDeposit = usdcAmount - glpUSD;
+        glpPurchase = glpUSD*vault.PRICE_PRECISION()/getGLPPrice();
+        (wethShort, wbtcShort) = getGLPDelta(glpPurchase);
     }
 }
