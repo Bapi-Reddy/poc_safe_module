@@ -62,9 +62,9 @@ contract TaskDemo is GelatoManager, Ownable {
         _depositFunds(wad, ETH);
     }
 
-    function removeFunds(uint256 wad) public payable onlyOwner {
-        withdrawFunds(wad, ETH);
-    }
+    // function removeFunds(uint256 wad) public payable onlyOwner {
+    //     withdrawFunds(wad, ETH);
+    // }
 
     function recover() public onlyOwner {
         (bool success, ) = payable(owner()).call{value: address(this).balance}(
@@ -73,15 +73,15 @@ contract TaskDemo is GelatoManager, Ownable {
         require(success, "recovery failed");
     }
 
-    function exit(address safe) public onlyOwner {
-        removeSafe(safe);
+    // function exit(address safe) public onlyOwner {
+    //     removeSafe(safe);
 
-        uint256 bal = ITaskTreasuryUpgradable(ops.taskTreasury())
-            .userTokenBalance(address(this), ETH);
+    //     uint256 bal = ITaskTreasuryUpgradable(ops.taskTreasury())
+    //         .userTokenBalance(address(this), ETH);
 
-        removeFunds(bal);
-        recover();
-    }
+    //     removeFunds(bal);
+    //     recover();
+    // }
 
     receive() external payable {}
 }
