@@ -44,7 +44,7 @@ contract GLPController is Registry {
         returns (uint256 wethOut)
     {
         wethOut = rewardsRouter.unstakeAndRedeemGlp(
-            WBTC,
+            address(wbtc),
             glpAmount,
             0,
             address(this)
@@ -106,9 +106,6 @@ contract GLPController is Registry {
 
 
     function getGLPDelta(uint glpAmount) public returns(uint wethDelta, uint wbtcDelta) {
-        wbtc_token_weight = vault.tokenWeights(address(wbtc));
-        weth_token_weight = vault.tokenWeights(address(weth));
-
         wethDelta = vault.poolAmounts(address(weth))*glpAmount/glp.totalSupply();
         wbtcDelta = vault.poolAmounts(address(wbtc))*glpAmount/glp.totalSupply();
     }
@@ -129,8 +126,8 @@ contract GLPController is Registry {
         ratio = numerator*MAX_BPS/denominator;
     }
 
-    function getGLPPrice() public returns (uint glpPirce){
-        glp_price = ((glpManager.getAum(true)*vault.PRICE_PRECISION())/glp.totalSupply())/glpManager.PRICE_PRECISION();
+    function getGLPPrice() public returns (uint glpPrice){
+        glpPrice = ((glpManager.getAum(true)*vault.PRICE_PRECISION())/glp.totalSupply())/glpManager.PRICE_PRECISION();
     }
 
     function openPositionParams(uint usdcAmount, uint desired_hf) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
