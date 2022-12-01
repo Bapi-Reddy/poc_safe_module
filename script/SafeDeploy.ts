@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from "ethers";
 import dotenv from "dotenv";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
-import { SafeAccountConfig, SafeFactory } from "@gnosis.pm/safe-core-sdk";
+import Safe, { SafeAccountConfig, SafeFactory } from "@gnosis.pm/safe-core-sdk";
 
 import { MetaTransactionData } from "@safe-global/safe-core-sdk-types";
 
@@ -37,10 +37,11 @@ const SafeModuleAbi = [
 const main = async () => {
   dotenv.config();
   const USDC_ADDRESS = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
-  /// TODO: add address after deploy
-  const SAFE_MODULE_ADDRESS = "";
+  const SAFE_MODULE_ADDRESS = "0xdcba7eb0194a9d46b72bca394ab526f771653afd";
 
-  const provider = new ethers.providers.JsonRpcProvider(process.env.MATIC_RPC);
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.ARBITRUM_RPC
+  );
   const safeOwner = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 
   const ethAdapter = new EthersAdapter({
@@ -61,7 +62,7 @@ const main = async () => {
       safeModuleContract.interface.encodeFunctionData("registerSafe"),
     initPosCallData: (_safe: string) =>
       safeModuleContract.interface.encodeFunctionData("initPosition", [
-        BigNumber.from(1).mul(BigNumber.from(1e9)).mul(BigNumber.from(1e9))
+        BigNumber.from(1).mul(BigNumber.from(1e6))
       ])
   };
 
@@ -72,13 +73,18 @@ const main = async () => {
     owners: [safeOwner.address],
     threshold: 1
   };
-  const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
+
+  // const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
+  const safeSdk = await Safe.create({
+    ethAdapter,
+    safeAddress: "0x8CE8a6DeBBE70d072B2e9Db8A2c58b9345326Ab4"
+  });
   console.log("[safe deployed]", safeSdk.getAddress());
 
   /// TEMP: init balance on safe
   await usdcContract.transfer(
     safeSdk.getAddress(),
-    BigNumber.from(1).mul(BigNumber.from(1e9)).mul(BigNumber.from(1e9))
+    BigNumber.from(1).mul(BigNumber.from(1e6))
   );
 
   const safeEnableModuleData = (
@@ -114,7 +120,7 @@ const main = async () => {
 
   await safeSdk.executeTransaction(safeEnableModuleSignedTx, {
     /// TODO: hardcoded gas limit for tenderly testing, must be fetched from RPC in prod
-    gasLimit: 8000000
+    gasLimit: 10000000
   });
   console.log(`[Enabled Module] ${safeModuleConfig.address}`);
 };
