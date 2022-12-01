@@ -33,4 +33,8 @@ contract AaveController is Registry {
     function removeCollateral(uint256 usdcAmt) public {
         aavePool.withdraw(address(usdc), usdcAmt, address(this));
     }
+
+    //TODO: need view function for aave hf
+
+    //TODO: need view function for token ltv factor.
 }
