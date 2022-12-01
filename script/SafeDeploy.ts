@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from "ethers";
 import dotenv from "dotenv";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
-import { SafeAccountConfig, SafeFactory } from "@gnosis.pm/safe-core-sdk";
+import Safe, { SafeAccountConfig, SafeFactory } from "@gnosis.pm/safe-core-sdk";
 
 import { MetaTransactionData } from "@safe-global/safe-core-sdk-types";
 
@@ -17,12 +17,31 @@ const ERC20Abi = [
     type: "function"
   }
 ];
+const SafeModuleAbi = [
+  {
+    inputs: [{ internalType: "uint256", name: "usdcAmt", type: "uint256" }],
+    name: "initPosition",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "registerSafe",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  }
+];
 
 const main = async () => {
   dotenv.config();
-  const DAI_ADDRESS = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+  const USDC_ADDRESS = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
+  const SAFE_MODULE_ADDRESS = "0xdcba7eb0194a9d46b72bca394ab526f771653afd";
 
-  const provider = new ethers.providers.JsonRpcProvider(process.env.MATIC_RPC);
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.ARBITRUM_RPC
+  );
   const safeOwner = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 
   const ethAdapter = new EthersAdapter({
@@ -30,14 +49,20 @@ const main = async () => {
     signerOrProvider: safeOwner
   });
 
-  /// TODO: transfering 0.1DAI to safe here, modify it to safeModule address and calldata to execute
-  const erc20Contract = new ethers.Contract(DAI_ADDRESS, ERC20Abi, safeOwner);
+  const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20Abi, safeOwner);
+  const safeModuleContract = new ethers.Contract(
+    SAFE_MODULE_ADDRESS,
+    SafeModuleAbi,
+    safeOwner
+  );
+
   const safeModuleConfig = {
-    address: DAI_ADDRESS,
-    initCallData: (_safe: string) =>
-      erc20Contract.interface.encodeFunctionData("transfer", [
-        _safe,
-        BigNumber.from(1).mul(BigNumber.from(1e9))
+    address: safeModuleContract.address,
+    registerSafeCallData: (_safe: string) =>
+      safeModuleContract.interface.encodeFunctionData("registerSafe"),
+    initPosCallData: (_safe: string) =>
+      safeModuleContract.interface.encodeFunctionData("initPosition", [
+        BigNumber.from(1).mul(BigNumber.from(1e6))
       ])
   };
 
@@ -48,13 +73,18 @@ const main = async () => {
     owners: [safeOwner.address],
     threshold: 1
   };
-  const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
+
+  // const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
+  const safeSdk = await Safe.create({
+    ethAdapter,
+    safeAddress: "0x8CE8a6DeBBE70d072B2e9Db8A2c58b9345326Ab4"
+  });
   console.log("[safe deployed]", safeSdk.getAddress());
 
   /// TEMP: init balance on safe
-  await erc20Contract.transfer(
+  await usdcContract.transfer(
     safeSdk.getAddress(),
-    BigNumber.from(1).mul(BigNumber.from(1e9))
+    BigNumber.from(1).mul(BigNumber.from(1e6))
   );
 
   const safeEnableModuleData = (
@@ -66,7 +96,12 @@ const main = async () => {
     },
     {
       to: safeModuleConfig.address,
-      data: safeModuleConfig.initCallData(safeSdk.getAddress()),
+      data: safeModuleConfig.registerSafeCallData(safeSdk.getAddress()),
+      value: "0"
+    },
+    {
+      to: safeModuleConfig.address,
+      data: safeModuleConfig.initPosCallData(safeSdk.getAddress()),
       value: "0"
     }
   ];
@@ -85,7 +120,7 @@ const main = async () => {
 
   await safeSdk.executeTransaction(safeEnableModuleSignedTx, {
     /// TODO: hardcoded gas limit for tenderly testing, must be fetched from RPC in prod
-    gasLimit: 8000000
+    gasLimit: 10000000
   });
   console.log(`[Enabled Module] ${safeModuleConfig.address}`);
 };
