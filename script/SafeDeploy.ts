@@ -17,10 +17,28 @@ const ERC20Abi = [
     type: "function"
   }
 ];
+const SafeModuleAbi = [
+  {
+    inputs: [{ internalType: "uint256", name: "usdcAmt", type: "uint256" }],
+    name: "initPosition",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "registerSafe",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  }
+];
 
 const main = async () => {
   dotenv.config();
-  const DAI_ADDRESS = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+  const USDC_ADDRESS = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
+  /// TODO: add address after deploy
+  const SAFE_MODULE_ADDRESS = "";
 
   const provider = new ethers.providers.JsonRpcProvider(process.env.MATIC_RPC);
   const safeOwner = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
@@ -30,14 +48,20 @@ const main = async () => {
     signerOrProvider: safeOwner
   });
 
-  /// TODO: transfering 0.1DAI to safe here, modify it to safeModule address and calldata to execute
-  const erc20Contract = new ethers.Contract(DAI_ADDRESS, ERC20Abi, safeOwner);
+  const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20Abi, safeOwner);
+  const safeModuleContract = new ethers.Contract(
+    SAFE_MODULE_ADDRESS,
+    SafeModuleAbi,
+    safeOwner
+  );
+
   const safeModuleConfig = {
-    address: DAI_ADDRESS,
-    initCallData: (_safe: string) =>
-      erc20Contract.interface.encodeFunctionData("transfer", [
-        _safe,
-        BigNumber.from(1).mul(BigNumber.from(1e9))
+    address: safeModuleContract.address,
+    registerSafeCallData: (_safe: string) =>
+      safeModuleContract.interface.encodeFunctionData("registerSafe"),
+    initPosCallData: (_safe: string) =>
+      safeModuleContract.interface.encodeFunctionData("initPosition", [
+        BigNumber.from(1).mul(BigNumber.from(1e9)).mul(BigNumber.from(1e9))
       ])
   };
 
@@ -52,9 +76,9 @@ const main = async () => {
   console.log("[safe deployed]", safeSdk.getAddress());
 
   /// TEMP: init balance on safe
-  await erc20Contract.transfer(
+  await usdcContract.transfer(
     safeSdk.getAddress(),
-    BigNumber.from(1).mul(BigNumber.from(1e9))
+    BigNumber.from(1).mul(BigNumber.from(1e9)).mul(BigNumber.from(1e9))
   );
 
   const safeEnableModuleData = (
@@ -66,7 +90,12 @@ const main = async () => {
     },
     {
       to: safeModuleConfig.address,
-      data: safeModuleConfig.initCallData(safeSdk.getAddress()),
+      data: safeModuleConfig.registerSafeCallData(safeSdk.getAddress()),
+      value: "0"
+    },
+    {
+      to: safeModuleConfig.address,
+      data: safeModuleConfig.initPosCallData(safeSdk.getAddress()),
       value: "0"
     }
   ];
