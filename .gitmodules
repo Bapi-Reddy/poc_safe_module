@@ -4,12 +4,7 @@
 [submodule "lib/safe-contracts"]
 	path = lib/safe-contracts
 	url = https://github.com/safe-global/safe-contracts
-[submodule "lib/integrations-v2"]
-	path = lib/integrations-v2
-	url = https://github.com/Gearbox-protocol/integrations-v2
-[submodule "lib/core-v2"]
-	path = lib/core-v2
-	url = https://github.com/Gearbox-protocol/core-v2
+
 [submodule "lib/ops"]
 	path = lib/ops
 	url = https://github.com/gelatodigital/ops
