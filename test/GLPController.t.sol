@@ -16,19 +16,15 @@ contract GLPControllerTest is Test {
     }
 
     function testSetup() external {
-        uint256 usdcAmount = 1e6 * 1e3;
-        deal(address(usdc), address(this), usdcAmount);
-        usdc.transfer(address(cont), usdcAmount);
-        uint256 glpMinted = cont.depositUSDC(usdcAmount);
-
-        console.log("glpMinted", glpMinted);
-
-        vm.roll(block.number + 100000000);
-        vm.warp(block.timestamp + 100000000);
-
-        uint256 usdcOut = cont.burnStakedGLPWBTC(glpMinted);
-
-        console.log("usdcOut", usdcOut);
-        console.log("usdc bal", usdc.balanceOf(address(cont)));
+        // uint256 usdcAmount = 1e6 * 1e3;
+        // deal(address(usdc), address(this), usdcAmount);
+        // usdc.transfer(address(cont), usdcAmount);
+        // uint256 glpMinted = cont.depositUSDC(usdcAmount);
+        // console.log("glpMinted", glpMinted);
+        // vm.roll(block.number + 100000000);
+        // vm.warp(block.timestamp + 100000000);
+        // uint256 usdcOut = cont.burnStakedGLPWBTC(glpMinted);
+        // console.log("usdcOut", usdcOut);
+        // console.log("usdc bal", usdc.balanceOf(address(cont)));
     }
 }

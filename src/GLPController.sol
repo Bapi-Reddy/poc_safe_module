@@ -19,7 +19,7 @@ contract GLPController is Registry {
     {
         uint256 estimateUSDGOut = adjustOutputSlippage(usdcAmount, gmxSlippage);
         uint256 estimatedGlpOut = estimateGlpPrice(usdcAmount, true);
-        console.log("glp estimated", estimatedGlpOut);
+        // console.log("glp estimated", estimatedGlpOut);
         // glpOut = rewardsRouter.mintAndStakeGlp(
         //     address(usdc),
         //     usdcAmount,
@@ -115,11 +115,16 @@ contract GLPController is Registry {
         return estUsdcOut;
     }
 
-
-
-    function getGLPDelta(uint glpAmount) public returns(uint wethDelta, uint wbtcDelta) {
-        wethDelta = vault.poolAmounts(address(weth))*glpAmount/glp.totalSupply();
-        wbtcDelta = vault.poolAmounts(address(wbtc))*glpAmount/glp.totalSupply();
+    function getGLPDelta(uint256 glpAmount)
+        public
+        returns (uint256 wethDelta, uint256 wbtcDelta)
+    {
+        wethDelta =
+            (vault.poolAmounts(address(weth)) * glpAmount) /
+            glp.totalSupply();
+        wbtcDelta =
+            (vault.poolAmounts(address(wbtc)) * glpAmount) /
+            glp.totalSupply();
     }
 
     function getHedgeRatio() public returns (uint256 ratio) {
@@ -145,9 +150,12 @@ contract GLPController is Registry {
         ratio = (numerator * MAX_BPS) / denominator;
     }
 
-    function getGLPPrice() public returns (uint glpPrice){
-        glpPrice = ((glpManager.getAum(true)*vault.PRICE_PRECISION())/glp.totalSupply())/glpManager.PRICE_PRECISION();
-}
+    function getGLPPrice() public returns (uint256 glpPrice) {
+        glpPrice =
+            ((glpManager.getAum(true) * vault.PRICE_PRECISION()) /
+                glp.totalSupply()) /
+            glpManager.PRICE_PRECISION();
+    }
 
     function openPositionParams(uint256 usdcAmount, uint256 desired_hf)
         public

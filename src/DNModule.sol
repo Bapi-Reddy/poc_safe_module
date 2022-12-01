@@ -4,6 +4,8 @@ pragma solidity ^0.8.13;
 import "./interfaces/ICurveGauge.sol";
 
 import "./GLPController.sol";
+import "./GLPController.sol";
+import "./AaveController.sol";
 
 import "./Enum.sol";
 
@@ -21,7 +23,7 @@ interface GnosisSafe {
     ) external returns (bool success);
 }
 
-contract DNModule {
+contract DNModule is GLPController, AaveController {
     mapping(address => bool) public registeredSafes;
 
     function registerSafe() public {
@@ -29,13 +31,13 @@ contract DNModule {
         registeredSafes[msg.sender] = true;
     }
 
-    function initPostion(uint256 usdcAmt) public onlySafe {
+    function initPosition(uint256 usdcAmt) public onlySafe {
         // usdc.approve(address(glpManager), usdcAmount);
 
         GnosisSafe(msg.sender).execTransactionFromModule(
             address(usdc),
             0,
-            abi.encodeCall(usdc.approve, (address(glpManager), usdcAmount)),
+            abi.encodeCall(usdc.approve, (address(glpManager), usdcAmt)),
             Enum.Operation.Call
         );
 
@@ -44,7 +46,7 @@ contract DNModule {
         GnosisSafe(msg.sender).execTransactionFromModule(
             to,
             value,
-            data,
+            callData,
             Enum.Operation.Call
         );
     }
