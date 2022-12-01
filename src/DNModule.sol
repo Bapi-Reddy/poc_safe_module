@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import "./interfaces/ICurveGauge.sol";
 
+import "./GLPController.sol";
+
 import "./Enum.sol";
 
 interface GnosisSafe {
@@ -20,35 +22,35 @@ interface GnosisSafe {
 }
 
 contract DNModule {
-    /// @dev Address that this module will pass transactions to.
-    ICurveGauge internal curveGauge =
-        ICurveGauge(0x9633E0749faa6eC6d992265368B88698d6a93Ac0);
+    mapping(address => bool) public registeredSafes;
 
-    function harvest(address safe, address keeper)
-        public
-        claimGas(safe, keeper)
-        returns (bool success)
-    {
-        success = GnosisSafe(safe).execTransactionFromModule(
-            address(curveGauge),
-            0,
-            abi.encodeWithSignature("claim_rewards()"),
-            Enum.Operation.Call
-        );
-        return success;
+    function registerSafe() public {
+        require(!registeredSafes[msg.sender], "already safe");
+        registeredSafes[msg.sender] = true;
     }
 
-    modifier claimGas(address safe, address recipient) {
-        uint256 startGas = gasleft();
-        _;
-        uint256 endGas = gasleft();
-        uint256 totalFee = (startGas - endGas + 50000) * tx.gasprice; // Adding 50k for additional eth transfer using gnosis
-        bool success = GnosisSafe(safe).execTransactionFromModule(
-            recipient,
-            totalFee,
-            abi.encodeWithSignature(""),
+    function initPostion(uint256 usdcAmt) public onlySafe {
+        // usdc.approve(address(glpManager), usdcAmount);
+
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            address(usdc),
+            0,
+            abi.encodeCall(usdc.approve, (address(glpManager), usdcAmount)),
             Enum.Operation.Call
         );
-        require(success);
+
+        (address to, uint256 value, bytes memory callData) = GLPController
+            .depositUSDC(usdcAmt / 2);
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            to,
+            value,
+            data,
+            Enum.Operation.Call
+        );
+    }
+
+    modifier onlySafe() {
+        require(registeredSafes[msg.sender], "only safe");
+        _;
     }
 }

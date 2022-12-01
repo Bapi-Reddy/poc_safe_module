@@ -9,19 +9,31 @@ contract GLPController is Registry {
 
     uint256 stakedGLP;
 
-    function depositUSDC(uint256 usdcAmount) public returns (uint256 glpOut) {
-        usdc.approve(address(glpManager), usdcAmount);
-
+    function depositUSDC(uint256 usdcAmount)
+        public
+        returns (
+            address to,
+            uint256 value,
+            bytes memory callData
+        )
+    {
         uint256 estimateUSDGOut = adjustOutputSlippage(usdcAmount, gmxSlippage);
         uint256 estimatedGlpOut = estimateGlpPrice(usdcAmount, true);
         console.log("glp estimated", estimatedGlpOut);
-        glpOut = rewardsRouter.mintAndStakeGlp(
-            address(usdc),
-            usdcAmount,
-            estimateUSDGOut,
-            0
+        // glpOut = rewardsRouter.mintAndStakeGlp(
+        //     address(usdc),
+        //     usdcAmount,
+        //     estimateUSDGOut,
+        //     0
+        // );
+        // stakedGLP += glpOut;
+
+        callData = abi.encodeCall(
+            rewardsRouter.mintAndStakeGlp,
+            (address(usdc), usdcAmount, estimateUSDGOut, 0)
         );
-        stakedGLP += glpOut;
+        to = address(rewardsRouter);
+        value = 0;
     }
 
     function burnStakedGLP(uint256 glpAmount) public returns (uint256 usdcOut) {
@@ -110,32 +122,48 @@ contract GLPController is Registry {
         wbtcDelta = vault.poolAmounts(address(wbtc))*glpAmount/glp.totalSupply();
     }
 
-    function getHedgeRatio() public returns (uint ratio) {
-        uint glpAmount = 1000e18; // 1000 glp tokens
-        (uint wethDelta, uint wbtcDelta) = getGLPDelta(glpAmount);
-        uint wethDeltaInUsd = wethDelta*vault.getMinPrice(address(weth))/WETH_PRECISION;
-        uint wbtcDeltaInUsd = wbtcDelta*vault.getMinPrice(address(wbtc))/WBTC_PRECISION;
-        uint netDelta = wethDeltaInUsd + wbtcDeltaInUsd;
-        uint glpPrice = getGLPPrice();
-        ratio = (netDelta*MAX_BPS)/(glpAmount*glpPrice/GLP_PRECISION);
+    function getHedgeRatio() public returns (uint256 ratio) {
+        uint256 glpAmount = 1000e18; // 1000 glp tokens
+        (uint256 wethDelta, uint256 wbtcDelta) = getGLPDelta(glpAmount);
+        uint256 wethDeltaInUsd = (wethDelta *
+            vault.getMinPrice(address(weth))) / WETH_PRECISION;
+        uint256 wbtcDeltaInUsd = (wbtcDelta *
+            vault.getMinPrice(address(wbtc))) / WBTC_PRECISION;
+        uint256 netDelta = wethDeltaInUsd + wbtcDeltaInUsd;
+        uint256 glpPrice = getGLPPrice();
+        ratio = (netDelta * MAX_BPS) / ((glpAmount * glpPrice) / GLP_PRECISION);
     }
 
-    function getGLPRatio(uint usdc_ltv, uint desired_hf)public returns (uint ratio){
-        uint numerator = usdc_ltv;
-        uint denominator = (desired_hf*getHedgeRatio()/MAX_BPS) + usdc_ltv - (usdc_ltv*getHedgeRatio()/MAX_BPS);
-        ratio = numerator*MAX_BPS/denominator;
+    function getGLPRatio(uint256 usdc_ltv, uint256 desired_hf)
+        public
+        returns (uint256 ratio)
+    {
+        uint256 numerator = usdc_ltv;
+        uint256 denominator = ((desired_hf * getHedgeRatio()) / MAX_BPS) +
+            usdc_ltv -
+            ((usdc_ltv * getHedgeRatio()) / MAX_BPS);
+        ratio = (numerator * MAX_BPS) / denominator;
     }
 
     function getGLPPrice() public returns (uint glpPrice){
         glpPrice = ((glpManager.getAum(true)*vault.PRICE_PRECISION())/glp.totalSupply())/glpManager.PRICE_PRECISION();
-    }
+}
 
-    function openPositionParams(uint usdcAmount, uint desired_hf) public returns (uint glpPurchase, uint aaveUSDCDeposit, uint wbtcShort, uint wethShort) {
-        uint usdc_ltv = 7500; //TODO: replace it with value fetched from aave. 
-        uint glpRatio = getGLPRatio(usdc_ltv, desired_hf);
-        uint glpUSD = usdcAmount*glpRatio/MAX_BPS;
+    function openPositionParams(uint256 usdcAmount, uint256 desired_hf)
+        public
+        returns (
+            uint256 glpPurchase,
+            uint256 aaveUSDCDeposit,
+            uint256 wbtcShort,
+            uint256 wethShort
+        )
+    {
+        uint256 usdc_ltv = 7500; //TODO: replace it with value fetched from aave.
+        uint256 glpRatio = getGLPRatio(usdc_ltv, desired_hf);
+        uint256 glpUSD = (usdcAmount * glpRatio) / MAX_BPS;
         aaveUSDCDeposit = usdcAmount - glpUSD;
-        glpPurchase = ((glpUSD*vault.PRICE_PRECISION()/getGLPPrice())*GLP_PRECISION/USDC_PRECISION);
+        glpPurchase = ((((glpUSD * vault.PRICE_PRECISION()) / getGLPPrice()) *
+            GLP_PRECISION) / USDC_PRECISION);
         (wethShort, wbtcShort) = getGLPDelta(glpPurchase);
     }
 }
