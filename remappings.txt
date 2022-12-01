@@ -1,2 +1,4 @@
-@openzeppelin=lib/openzeppelin-contracts
+gearbox_core/=lib/core-v2/contracts/
+gearbox_integrations/=lib/integrations-v2/contracts/
+@openzeppelin/=lib/openzeppelin-contracts
 ds-test=lib/forge-std/lib/ds-test/src
