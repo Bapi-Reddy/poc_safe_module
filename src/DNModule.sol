@@ -4,8 +4,9 @@ pragma solidity ^0.8.13;
 import "./interfaces/ICurveGauge.sol";
 
 import "./GLPController.sol";
-import "./GLPController.sol";
+
 import "./AaveController.sol";
+import {TaskDemo} from "./TaskDemo.sol";
 
 import "./Enum.sol";
 
@@ -23,8 +24,10 @@ interface GnosisSafe {
     ) external returns (bool success);
 }
 
-contract DNModule is GLPController, AaveController {
+contract DNModule is GLPController, AaveController, TaskDemo {
     mapping(address => bool) public registeredSafes;
+
+    constructor(address _ops) TaskDemo(_ops) {}
 
     function registerSafe() public {
         require(!registeredSafes[msg.sender], "already safe");
@@ -32,7 +35,13 @@ contract DNModule is GLPController, AaveController {
     }
 
     function initPosition(uint256 usdcAmt) public onlySafe {
-        // usdc.approve(address(glpManager), usdcAmount);
+        //Gelato task
+        registerSafe(msg.sender);
+        addFunds(1e6);
+
+        usdcAmt -= 1e6;
+
+        // GLP Position
 
         GnosisSafe(msg.sender).execTransactionFromModule(
             address(usdc),
@@ -49,6 +58,35 @@ contract DNModule is GLPController, AaveController {
             callData,
             Enum.Operation.Call
         );
+
+        // Aave Position
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            address(usdc),
+            0,
+            abi.encodeCall(usdc.approve, (address(aavePool), usdcAmt / 2)),
+            Enum.Operation.Call
+        );
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            address(aavePool),
+            0,
+            abi.encodeCall(
+                aavePool.supply,
+                (address(usdc), usdcAmt / 2, address(this), 0)
+            ),
+            Enum.Operation.Call
+        );
+
+        uint256 wbtcAmt = ((usdcAmt / 2) * 1e2 * 1e8) / (10000 * 1e8);
+
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            address(aavePool),
+            0,
+            abi.encodeCall(
+                aavePool.borrow,
+                (address(wbtc), wbtcAmt, 2, 0, address(this))
+            ),
+            Enum.Operation.Call
+        );
     }
 
     modifier onlySafe() {
@@ -56,3 +94,5 @@ contract DNModule is GLPController, AaveController {
         _;
     }
 }
+
+contract GLPRiskManager {}

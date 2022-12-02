@@ -127,7 +127,7 @@ interface IAavePoolV3 {
         address onBehalfOf
     ) external;
 
-    function borrow(bytes32 args) external;
+    // function borrow(bytes32 args) external;
 
     function configureEModeCategory(
         uint8 id,
@@ -317,7 +317,7 @@ interface IAavePoolV3 {
         uint16 referralCode
     ) external;
 
-    function supply(bytes32 args) external;
+    // function supply(bytes32 args) external;
 
     function supplyWithPermit(
         address asset,

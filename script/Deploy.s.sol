@@ -9,7 +9,7 @@ contract TaskerScript is Script {
     function setUp() public {}
 
     function run() public {
-        address ops = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
+        address ops = 0xB3f5503f93d5Ef84b06993a1975B9D21B962892F;
         address sender = 0xAE75B29ADe678372D77A8B41225654138a7E6ff1;
         vm.startBroadcast();
 
@@ -18,7 +18,7 @@ contract TaskerScript is Script {
         // td.addFunds(1 ether);
         // td.registerSafe(sender);
 
-        DNModule dn = new DNModule();
+        DNModule dn = new DNModule(ops);
 
         vm.stopBroadcast();
 

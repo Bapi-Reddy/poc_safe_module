@@ -37,7 +37,7 @@ const SafeModuleAbi = [
 const main = async () => {
   dotenv.config();
   const USDC_ADDRESS = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
-  const SAFE_MODULE_ADDRESS = "0xdcba7eb0194a9d46b72bca394ab526f771653afd";
+  const SAFE_MODULE_ADDRESS = "0xbe2d33b19835869fd7412c4cab97e7e29a796a75";
 
   const provider = new ethers.providers.JsonRpcProvider(
     process.env.ARBITRUM_RPC
@@ -74,11 +74,12 @@ const main = async () => {
     threshold: 1
   };
 
-  // const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
-  const safeSdk = await Safe.create({
-    ethAdapter,
-    safeAddress: "0x8CE8a6DeBBE70d072B2e9Db8A2c58b9345326Ab4"
-  });
+  const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
+  // const safeSdk = await Safe.create({
+  //   ethAdapter,
+  //   // safeAddress: "0x8CE8a6DeBBE70d072B2e9Db8A2c58b9345326Ab4"
+  //   safeAddress: safeSdk.getAddress()
+  // });
   console.log("[safe deployed]", safeSdk.getAddress());
 
   /// TEMP: init balance on safe

@@ -11,23 +11,20 @@ contract GelatoManager is OpsTaskCreator {
         returns (bytes32 currentTask)
     {
         ModuleData memory moduleData = ModuleData({
-            modules: new Module[](3),
-            args: new bytes[](3)
+            modules: new Module[](2),
+            args: new bytes[](2)
         });
 
         moduleData.modules[0] = Module.RESOLVER;
-        moduleData.modules[1] = Module.TIME;
-        moduleData.modules[2] = Module.PROXY;
+
+        moduleData.modules[1] = Module.PROXY;
 
         moduleData.args[0] = _resolverModuleArg(
             address(this), // address of resolver
             resolverCalldata // what function to call on resolver
         );
-        moduleData.args[1] = _timeModuleArg(
-            block.timestamp, //starttime
-            300 //interval
-        );
-        moduleData.args[2] = _proxyModuleArg();
+
+        moduleData.args[1] = _proxyModuleArg();
 
         currentTask = _createTask(
             address(this), // _execAddress

@@ -3,17 +3,18 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/access/Ownable.sol";
 import "./GelatoManager.sol";
+import {Registry} from "./Registry.sol";
 
-contract TaskDemo is GelatoManager, Ownable {
+contract TaskDemo is GelatoManager, Ownable, Registry {
     mapping(address => bytes32) public safeTask;
 
-    bool execTasks;
+    bool execTasks = false;
 
-    event SafetaskDone(address safe);
+    event SafeRebalanceExecuted(address safe);
 
     constructor(address ops) GelatoManager(ops) {}
 
-    function toDoOrNotToDo(address safe)
+    function rebalanceCheck(address safe)
         public
         view
         returns (bool, bytes memory)
@@ -21,28 +22,28 @@ contract TaskDemo is GelatoManager, Ownable {
         if (safeTask[safe] == bytes32(0))
             return (false, "Safe is not registered");
         if (execTasks)
-            return (true, abi.encodeCall(this.actionForSafe, (safe)));
+            return (true, abi.encodeCall(this.rebalanceSafe, (safe)));
         return (false, "execution not set to true");
     }
 
     /// this function should be present in safe module
     /// it may also check msgsender to be dedicatedMsgSender
     /// for demo, this is currently in the resolver
-    function actionForSafe(address safe) external onlyDedicatedMsgSender {
+    function rebalanceSafe(address safe) external onlyDedicatedMsgSender {
         // DO whatever you need to
-        emit SafetaskDone(safe);
+        emit SafeRebalanceExecuted(safe);
     }
 
-    function registerSafe(address safe) public onlyOwner {
+    function registerSafe(address safe) internal {
         require(safeTask[safe] == bytes32(0), "Safe already registered");
         bytes memory resolverCalldata = abi.encodeCall(
-            this.toDoOrNotToDo,
+            this.rebalanceCheck,
             (safe)
         );
         // bytes memory funcSelector = bytes(this.actionForSafe.selector);
         bytes32 taskId = init(
             resolverCalldata,
-            abi.encode(this.actionForSafe.selector)
+            abi.encode(this.rebalanceSafe.selector)
         );
         safeTask[safe] = taskId;
     }
@@ -58,13 +59,13 @@ contract TaskDemo is GelatoManager, Ownable {
         execTasks = !execTasks;
     }
 
-    function addFunds(uint256 wad) public onlyOwner {
-        _depositFunds(wad, ETH);
+    function addFunds(uint256 wad) internal {
+        _depositFunds(wad, address(usdc));
     }
 
-    // function removeFunds(uint256 wad) public payable onlyOwner {
-    //     withdrawFunds(wad, ETH);
-    // }
+    function removeFunds(uint256 wad) public onlyOwner {
+        taskTreasury.withdrawFunds(payable(address(this)), address(usdc), wad);
+    }
 
     function recover() public onlyOwner {
         (bool success, ) = payable(owner()).call{value: address(this).balance}(
@@ -73,15 +74,15 @@ contract TaskDemo is GelatoManager, Ownable {
         require(success, "recovery failed");
     }
 
-    // function exit(address safe) public onlyOwner {
-    //     removeSafe(safe);
+    function exit(address safe) public onlyOwner {
+        removeSafe(safe);
 
-    //     uint256 bal = ITaskTreasuryUpgradable(ops.taskTreasury())
-    //         .userTokenBalance(address(this), ETH);
+        uint256 bal = ITaskTreasuryUpgradable(ops.taskTreasury())
+            .userTokenBalance(address(this), address(usdc));
 
-    //     removeFunds(bal);
-    //     recover();
-    // }
+        removeFunds(bal);
+        recover();
+    }
 
     receive() external payable {}
 }

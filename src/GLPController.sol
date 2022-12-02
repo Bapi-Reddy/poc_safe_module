@@ -11,6 +11,7 @@ contract GLPController is Registry {
 
     function depositUSDC(uint256 usdcAmount)
         public
+        view
         returns (
             address to,
             uint256 value,
@@ -18,7 +19,7 @@ contract GLPController is Registry {
         )
     {
         uint256 estimateUSDGOut = adjustOutputSlippage(usdcAmount, gmxSlippage);
-        uint256 estimatedGlpOut = estimateGlpPrice(usdcAmount, true);
+        // uint256 estimatedGlpOut = estimateGlpPrice(usdcAmount, true);
         // console.log("glp estimated", estimatedGlpOut);
         // glpOut = rewardsRouter.mintAndStakeGlp(
         //     address(usdc),
@@ -150,7 +151,7 @@ contract GLPController is Registry {
         ratio = (numerator * MAX_BPS) / denominator;
     }
 
-    function getGLPPrice() public returns (uint256 glpPrice) {
+    function getGLPPrice() public view returns (uint256 glpPrice) {
         glpPrice =
             ((glpManager.getAum(true) * vault.PRICE_PRECISION()) /
                 glp.totalSupply()) /
