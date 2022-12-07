@@ -85,45 +85,45 @@ const main = async () => {
   /// TEMP: init balance on safe
   await usdcContract.transfer(
     safeSdk.getAddress(),
-    BigNumber.from(1).mul(BigNumber.from(1e6))
+    BigNumber.from(10).mul(BigNumber.from(1e6))
   );
 
-  const safeEnableModuleData = (
-    await safeSdk.createEnableModuleTx(safeModuleConfig.address)
-  ).data;
-  const safeEnableModuleAndExecuteOpsData: MetaTransactionData[] = [
-    {
-      ...safeEnableModuleData
-    },
-    {
-      to: safeModuleConfig.address,
-      data: safeModuleConfig.registerSafeCallData(safeSdk.getAddress()),
-      value: "0"
-    },
-    {
-      to: safeModuleConfig.address,
-      data: safeModuleConfig.initPosCallData(safeSdk.getAddress()),
-      value: "0"
-    }
-  ];
-  console.log(
-    `[executing txns] ${JSON.stringify(safeEnableModuleAndExecuteOpsData)}`
-  );
+  // const safeEnableModuleData = (
+  //   await safeSdk.createEnableModuleTx(safeModuleConfig.address)
+  // ).data;
+  // const safeEnableModuleAndExecuteOpsData: MetaTransactionData[] = [
+  //   {
+  //     ...safeEnableModuleData
+  //   },
+  //   {
+  //     to: safeModuleConfig.address,
+  //     data: safeModuleConfig.registerSafeCallData(safeSdk.getAddress()),
+  //     value: "0"
+  //   },
+  //   {
+  //     to: safeModuleConfig.address,
+  //     data: safeModuleConfig.initPosCallData(safeSdk.getAddress()),
+  //     value: "0"
+  //   }
+  // ];
+  // console.log(
+  //   `[executing txns] ${JSON.stringify(safeEnableModuleAndExecuteOpsData)}`
+  // );
 
-  const safeInitializationTx = await safeSdk.createTransaction({
-    safeTransactionData: safeEnableModuleAndExecuteOpsData,
-    onlyCalls: true
-  });
-  const safeEnableModuleSignedTx = await safeSdk.signTransaction(
-    safeInitializationTx,
-    "eth_sign"
-  );
+  // const safeInitializationTx = await safeSdk.createTransaction({
+  //   safeTransactionData: safeEnableModuleAndExecuteOpsData,
+  //   onlyCalls: true
+  // });
+  // const safeEnableModuleSignedTx = await safeSdk.signTransaction(
+  //   safeInitializationTx,
+  //   "eth_sign"
+  // );
 
-  await safeSdk.executeTransaction(safeEnableModuleSignedTx, {
-    /// TODO: hardcoded gas limit for tenderly testing, must be fetched from RPC in prod
-    gasLimit: 10000000
-  });
-  console.log(`[Enabled Module] ${safeModuleConfig.address}`);
+  // await safeSdk.executeTransaction(safeEnableModuleSignedTx, {
+  //   /// TODO: hardcoded gas limit for tenderly testing, must be fetched from RPC in prod
+  //   gasLimit: 10000000
+  // });
+  // console.log(`[Enabled Module] ${safeModuleConfig.address}`);
 };
 
 main()
