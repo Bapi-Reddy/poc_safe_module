@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 contract AaveController is Registry {
     // uint256 public aaveSlippage = 10;
-
+    uint safeFactor = 10400;
     function addCollateral(uint256 usdcAmount) public {
         usdc.approve(address(aavePool), usdcAmount);
         aavePool.supply(address(usdc), usdcAmount, address(this), 0);
@@ -35,6 +35,8 @@ contract AaveController is Registry {
     }
 
     //TODO: need view function for aave hf
-
+    function getHealthFactor(address safe) public view returns (uint256) {
+        return aavePool.getUserAccountData(safe).healthFactor;
+    }
     //TODO: need view function for token ltv factor.
 }
