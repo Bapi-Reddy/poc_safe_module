@@ -4,8 +4,9 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/access/Ownable.sol";
 import "./GelatoManager.sol";
 import {Registry} from "./Registry.sol";
+import {AaveController} from "./AaveController.sol";
 
-contract TaskDemo is GelatoManager, Ownable, Registry {
+contract TaskDemo is GelatoManager, Ownable, AaveController {
     mapping(address => bytes32) public safeTask;
 
     bool execTasks = false;
@@ -21,16 +22,18 @@ contract TaskDemo is GelatoManager, Ownable, Registry {
     {
         if (safeTask[safe] == bytes32(0))
             return (false, "Safe is not registered");
-        if (execTasks)
-            return (true, abi.encodeCall(this.rebalanceSafe, (safe)));
-        return (false, "execution not set to true");
+        bool condition = AaveController.getHealthFactor(safe)< safeFactor;
+        return (condition, abi.encodeCall(this.rebalanceSafe, (safe)));
     }
 
     /// this function should be present in safe module
     /// it may also check msgsender to be dedicatedMsgSender
-    /// for demo, this is currently in the resolver
     function rebalanceSafe(address safe) external onlyDedicatedMsgSender {
-        // DO whatever you need to
+        // Repaying aave debt
+        uint wbtcAmt = wbtc.balanceOf(safe);
+        uint wethAmt = weth.balanceOf(safe);    
+        AaveController.repayBTC(wbtcAmt);
+        AaveController.repayETH(wethAmt);
         emit SafeRebalanceExecuted(safe);
     }
 
