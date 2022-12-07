@@ -35,6 +35,13 @@ contract DNModule is GLPController, AaveController, TaskDemo {
     }
 
     function initPosition(uint256 usdcAmt) public onlySafe {
+        GnosisSafe(msg.sender).execTransactionFromModule(
+            address(usdc),
+            0,
+            abi.encodeCall(usdc.transfer, (address(this), 1e6)),
+            Enum.Operation.Call
+        );
+
         //Gelato task
         registerSafe(msg.sender);
         addFunds(1e6);
@@ -89,10 +96,14 @@ contract DNModule is GLPController, AaveController, TaskDemo {
         );
     }
 
+    function operateOnSafe(address safe) public {
+        GnosisSafe(safe).execTransactionFromModule(to, value, data, operation);
+    }
+
     modifier onlySafe() {
         require(registeredSafes[msg.sender], "only safe");
         _;
     }
 }
 
-contract GLPRiskManager {}
+// contract GLPRiskManager {}

@@ -60,6 +60,7 @@ contract TaskDemo is GelatoManager, Ownable, Registry {
     }
 
     function addFunds(uint256 wad) internal {
+        usdc.approve(address(ops.taskTreasury()), wad);
         _depositFunds(wad, address(usdc));
     }
 
